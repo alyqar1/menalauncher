@@ -1,30 +1,56 @@
-import React from 'react';
-import { Briefcase, ShoppingCart, Video, BarChart } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import * as Icons from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
-const segments = [
-  {
-    icon: Briefcase,
-    title: 'المستقلين',
-    description: 'إذا كنت تعمل كفريلانسر في السعودية أو دول أخرى في المنطقة، نحن نقدم لك الحلول المثالية لتأسيس عملك بشكل قانوني وآمن مع الوصول إلى بوابات الدفع الدولية مثل Stripe.'
-  },
-  {
-    icon: ShoppingCart,
-    title: 'التجارة الإلكترونية',
-    description: 'أنت صاحب متجر إلكتروني وتحتاج إلى تأسيس شركة في المملكة المتحدة؟ نحن نقدم لك خدمات مخصصة لتساعدك على توسيع نطاق أعمالك عبر الإنترنت بسهولة مع دعم متكامل ودفع آمن.'
-  },
-  {
-    icon: Video,
-    title: 'المبدعين في المحتوى',
-    description: 'إذا كنت مديرًا لوسائل الإعلام أو منتج محتوى، نحن نقدم لك الحلول القانونية المناسبة وتسهيلات الدفع لمساعدتك على النمو في السوق الدولي، مع دعم قوي ودائم.'
-  },
-  {
-    icon: BarChart,
-    title: 'المسوقين الرقميين',
-    description: 'سواء كنت تعمل كمسوق رقمي أو تدير وكالة تسويق، نحن هنا لدعمك من خلال تأسيس شركتك وتحقيق جميع احتياجاتك في السوق الدولية بكل سهولة.'
-  }
-];
+interface Segment {
+  id: string;
+  title: string;
+  description: string;
+  icon_name: string;
+}
 
 const AudienceSegments = () => {
+  const [segments, setSegments] = useState<Segment[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSegments = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('audience_segments')
+          .select('*')
+          .order('order');
+
+        if (error) {
+          console.error('Error fetching segments:', error);
+          return;
+        }
+
+        if (data) {
+          setSegments(data);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSegments();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="py-24 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <p className="text-xl text-gray-600">جاري تحميل المحتوى...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="py-24 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -33,20 +59,23 @@ const AudienceSegments = () => {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {segments.map((segment, index) => (
-            <div
-              key={index}
-              className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow duration-300"
-            >
-              <div className="flex items-center mb-6">
-                <div className="h-14 w-14 bg-secondary/10 rounded-xl flex items-center justify-center">
-                  <segment.icon className="h-8 w-8 text-primary" />
+          {segments.map((segment) => {
+            const Icon = Icons[segment.icon_name as keyof typeof Icons];
+            return (
+              <div
+                key={segment.id}
+                className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow duration-300"
+              >
+                <div className="flex items-center mb-6">
+                  <div className="h-14 w-14 bg-secondary/10 rounded-xl flex items-center justify-center">
+                    <Icon className="h-8 w-8 text-primary" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-primary mr-4">{segment.title}</h3>
                 </div>
-                <h3 className="text-2xl font-bold text-primary mr-4">{segment.title}</h3>
+                <p className="text-gray-600 text-lg leading-relaxed">{segment.description}</p>
               </div>
-              <p className="text-gray-600 text-lg leading-relaxed">{segment.description}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

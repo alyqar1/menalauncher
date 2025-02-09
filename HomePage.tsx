@@ -4,6 +4,7 @@ import Hero from '../components/Hero';
 import About from '../components/About';
 import Services from '../components/Services';
 import AudienceSegments from '../components/AudienceSegments';
+import HowItWorks from '../components/HowItWorks';
 import Pricing from '../components/Pricing';
 import SuccessStories from '../components/SuccessStories';
 import Testimonials from '../components/Testimonials';
@@ -21,6 +22,7 @@ function HomePage() {
         <Services />
         <About />
         <AudienceSegments />
+        <HowItWorks />
         <Pricing />
         <SuccessStories />
         <Testimonials />

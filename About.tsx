@@ -1,25 +1,56 @@
-import React from 'react';
-import { Building2, Globe2, Users2 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import * as Icons from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
-const features = [
-  {
-    icon: Building2,
-    title: 'تأسيس سهل وموثوق',
-    description: 'خدمات تأسيس شركات بريطانية مع دعم كامل باللغة العربية'
-  },
-  {
-    icon: Globe2,
-    title: 'وصول عالمي',
-    description: 'افتح آفاقاً جديدة لأعمالك من خلال التواجد في السوق البريطاني'
-  },
-  {
-    icon: Users2,
-    title: 'دعم محلي',
-    description: 'فريق متخصص يتحدث العربية لمساعدتك في كل خطوة'
-  }
-];
+interface Feature {
+  id: string;
+  title: string;
+  description: string;
+  icon_name: string;
+}
 
 const About = () => {
+  const [features, setFeatures] = useState<Feature[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFeatures = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('about_features')
+          .select('*')
+          .order('order');
+
+        if (error) {
+          console.error('Error fetching features:', error);
+          return;
+        }
+
+        if (data) {
+          setFeatures(data);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFeatures();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <p className="text-xl text-gray-600">جاري تحميل المحتوى...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div id="about" className="py-24 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -33,18 +64,21 @@ const About = () => {
         </div>
 
         <div className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-3">
-          {features.map((feature, index) => (
-            <div
-              key={index}
-              className="relative bg-gray-50 p-8 rounded-2xl hover:bg-gray-100 transition-colors duration-300"
-            >
-              <div className="h-12 w-12 bg-secondary rounded-xl flex items-center justify-center mb-6">
-                <feature.icon className="h-6 w-6 text-primary" />
+          {features.map((feature) => {
+            const Icon = Icons[feature.icon_name as keyof typeof Icons];
+            return (
+              <div
+                key={feature.id}
+                className="relative bg-gray-50 p-8 rounded-2xl hover:bg-gray-100 transition-colors duration-300"
+              >
+                <div className="h-12 w-12 bg-secondary rounded-xl flex items-center justify-center mb-6">
+                  <Icon className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-bold text-primary mb-4">{feature.title}</h3>
+                <p className="text-gray-600">{feature.description}</p>
               </div>
-              <h3 className="text-xl font-bold text-primary mb-4">{feature.title}</h3>
-              <p className="text-gray-600">{feature.description}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

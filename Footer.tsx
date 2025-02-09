@@ -1,8 +1,96 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Phone, Mail, MapPin, Facebook, Instagram, Linkedin, Twitter } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+
+interface ContactInfo {
+  id: string;
+  phone: string;
+  email: string;
+  address: string;
+}
+
+interface SocialLink {
+  id: string;
+  platform: string;
+  url: string;
+  order: number;
+}
+
+interface QuickLink {
+  id: string;
+  title: string;
+  url: string;
+  section: string;
+  order: number;
+}
+
+const socialIcons = {
+  facebook: Facebook,
+  instagram: Instagram,
+  linkedin: Linkedin,
+  twitter: Twitter,
+};
 
 const Footer = () => {
+  const [contactInfo, setContactInfo] = useState<ContactInfo | null>(null);
+  const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
+  const [quickLinks, setQuickLinks] = useState<QuickLink[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch contact info
+        const { data: contactData, error: contactError } = await supabase
+          .from('contact_info')
+          .select('*')
+          .single();
+
+        if (contactError) {
+          console.error('Error fetching contact info:', contactError);
+        } else {
+          setContactInfo(contactData);
+        }
+
+        // Fetch social links
+        const { data: socialData, error: socialError } = await supabase
+          .from('social_links')
+          .select('*')
+          .order('order');
+
+        if (socialError) {
+          console.error('Error fetching social links:', socialError);
+        } else {
+          setSocialLinks(socialData);
+        }
+
+        // Fetch quick links
+        const { data: linksData, error: linksError } = await supabase
+          .from('quick_links')
+          .select('*')
+          .order('order');
+
+        if (linksError) {
+          console.error('Error fetching quick links:', linksError);
+        } else {
+          setQuickLinks(linksData);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading || !contactInfo) return null;
+
+  const quickLinksSection = quickLinks.filter(link => link.section === 'quick_links');
+  const legalLinksSection = quickLinks.filter(link => link.section === 'legal');
+
   return (
     <footer id="contact" className="bg-gray-900 text-white py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -15,82 +103,70 @@ const Footer = () => {
             <div className="space-y-3">
               <div className="flex items-center text-gray-400 hover:text-white transition-colors">
                 <Phone className="h-5 w-5 ml-2" />
-                <a href="tel:+96181522815" dir="ltr">+961 81 522 815</a>
+                <a href={`tel:${contactInfo.phone}`} dir="ltr">{contactInfo.phone}</a>
               </div>
               <div className="flex items-center text-gray-400 hover:text-white transition-colors">
                 <Mail className="h-5 w-5 ml-2" />
-                <a href="mailto:info@menalauncher.com">info@menalauncher.com</a>
+                <a href={`mailto:${contactInfo.email}`}>{contactInfo.email}</a>
               </div>
               <div className="flex items-center text-gray-400">
                 <MapPin className="h-5 w-5 ml-2 flex-shrink-0" />
-                <span>المملكة المتحدة - لندن</span>
+                <span>{contactInfo.address}</span>
               </div>
             </div>
             <div className="flex space-x-4 mt-6">
-              <a href="https://facebook.com/menalauncher" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
-                <Facebook className="h-6 w-6" />
-              </a>
-              <a href="https://instagram.com/menalauncher" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
-                <Instagram className="h-6 w-6" />
-              </a>
-              <a href="https://linkedin.com/company/menalauncher" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
-                <Linkedin className="h-6 w-6" />
-              </a>
-              <a href="https://twitter.com/menalauncher" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
-                <Twitter className="h-6 w-6" />
-              </a>
+              {socialLinks.map((link) => {
+                const Icon = socialIcons[link.platform as keyof typeof socialIcons];
+                return (
+                  <a
+                    key={link.id}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gray-400 hover:text-white transition-colors"
+                  >
+                    <Icon className="h-6 w-6" />
+                  </a>
+                );
+              })}
             </div>
           </div>
           
           <div>
             <h4 className="text-lg font-semibold mb-4">روابط سريعة</h4>
             <ul className="space-y-2">
-              <li>
-                <Link to="/" className="text-gray-400 hover:text-white transition-colors">
-                  الرئيسية
-                </Link>
-              </li>
-              <li>
-                <a href="#services" className="text-gray-400 hover:text-white transition-colors">
-                  خدماتنا
-                </a>
-              </li>
-              <li>
-                <a href="#about" className="text-gray-400 hover:text-white transition-colors">
-                  عن الشركة
-                </a>
-              </li>
-              <li>
-                <a href="#pricing" className="text-gray-400 hover:text-white transition-colors">
-                  الأسعار
-                </a>
-              </li>
-              <li>
-                <Link to="/success-stories" className="text-gray-400 hover:text-white transition-colors">
-                  قصص النجاح
-                </Link>
-              </li>
+              {quickLinksSection.map((link) => (
+                <li key={link.id}>
+                  {link.url.startsWith('/') ? (
+                    <Link to={link.url} className="text-gray-400 hover:text-white transition-colors">
+                      {link.title}
+                    </Link>
+                  ) : (
+                    <a href={link.url} className="text-gray-400 hover:text-white transition-colors">
+                      {link.title}
+                    </a>
+                  )}
+                </li>
+              ))}
             </ul>
           </div>
           
           <div>
             <h4 className="text-lg font-semibold mb-4">الشروط والسياسات</h4>
             <ul className="space-y-2">
-              <li>
-                <Link to="/privacy-policy" className="text-gray-400 hover:text-white transition-colors">
-                  سياسة الخصوصية
-                </Link>
-              </li>
-              <li>
-                <Link to="/terms-and-conditions" className="text-gray-400 hover:text-white transition-colors">
-                  الشروط والأحكام
-                </Link>
-              </li>
-              <li>
-                <a href="#contact" className="text-gray-400 hover:text-white transition-colors">
-                  اتصل بنا
-                </a>
-              </li>
+              {legalLinksSection.map((link) => (
+                <li key={link.id}>
+                  {link.url.startsWith('/') ? (
+                    <Link to={link.url} className="text-gray-400 hover:text-white transition-colors">
+                      {link.title}
+                    </Link>
+                  ) : (
+                    <a href={link.url} className="text-gray-400 hover:text-white transition-colors">
+                      {link.title}
+                    </a>
+                  )}
+                </li>
+              ))}
             </ul>
           </div>
         </div>
